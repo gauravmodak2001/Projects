@@ -8,7 +8,6 @@ from matplotlib.animation import FuncAnimation
 import librosa.display
 from streamlit_webrtc import webrtc_streamer, AudioProcessorBase, ClientSettings, WebRtcMode
 import base64
-from moviepy.editor import AudioFileClip
 
 # Replace 'background.jpg' with the path to your image file
 with open("image.png", "rb") as image_file:
@@ -48,11 +47,15 @@ def plot_spectrogram(audio, sr):
     plt.title('Spectrogram')
     st.pyplot(plt)
 
-# Function to handle mp4 files
-def convert_mp4_to_wav(file):
-    with AudioFileClip(file) as audio_clip:
-        audio_clip.write_audiofile("temp_audio.wav", codec="pcm_s16le")
-    return "temp_audio.wav"
+# Audio processor to capture and process audio frames
+class AudioProcessor(AudioProcessorBase):
+    def __init__(self):
+        self.audio_buffer = []
+
+    def recv_audio(self, frame):
+        audio = frame.to_ndarray()
+        self.audio_buffer.append(audio)
+        return frame
 
 st.markdown(
     f"""
@@ -88,6 +91,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 st.title("🎸 Guitar Chord Classifier")
 st.write("Upload or record a WAV file to classify the guitar chord and visualize its spectrogram.")
@@ -127,18 +131,12 @@ if webrtc_ctx and webrtc_ctx.audio_processor:
         plot_spectrogram(audio_data, sr)
 
 # File upload for classification
-uploaded_file = st.file_uploader("Choose a WAV or MP4 file", type=['wav', 'mp4'])
+uploaded_file = st.file_uploader("Choose a WAV file", type=['wav'])
 
 if uploaded_file is not None:
-    if uploaded_file.name.endswith('.mp4'):
-        # Convert mp4 to wav
-        audio_path = convert_mp4_to_wav(uploaded_file)
-        audio, _ = librosa.load(audio_path, sr=sr)
-    else:
-        # Load wav file
-        audio, _ = librosa.load(uploaded_file, sr=sr)
-    
-    st.audio(uploaded_file, format='audio/wav' if uploaded_file.name.endswith('.wav') else 'audio/mp4')
+    # Load audio file
+    audio, _ = librosa.load(uploaded_file, sr=sr)
+    st.audio(uploaded_file, format='audio/wav')
     
     # Classify chord
     predicted_chord = classify_chord(audio)
