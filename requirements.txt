@@ -4,5 +4,5 @@ keras
 tensorflow
 librosa
 numpy
-matplotlib==3.7.1
+matplotlib
 soundfile  # Required by librosa for audio file processing
