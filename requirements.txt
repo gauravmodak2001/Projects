@@ -6,3 +6,4 @@ librosa
 numpy
 matplotlib
 soundfile  # Required by librosa for audio file processing
+moviepy
