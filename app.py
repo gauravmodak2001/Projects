@@ -4,20 +4,18 @@ import numpy as np
 import streamlit as st
 import matplotlib.pyplot as plt
 from keras.models import load_model
-from matplotlib.animation import FuncAnimation
 import librosa.display
 from streamlit_webrtc import webrtc_streamer, AudioProcessorBase, ClientSettings, WebRtcMode
 import base64
 
-# Replace 'background.jpg' with the path to your image file
+# Background image encoding
 with open("image.png", "rb") as image_file:
     encoded_string = base64.b64encode(image_file.read()).decode()
 
-# Define constants
+# Constants
 sr = 16000  # Sampling rate
 n_mfcc = 80  # Number of MFCC features
-N_CLASSES = 8  # Number of classes
-CHORD_LABELS = ['Am', 'Bb', 'Bdim', 'C', 'Dm', 'Em', 'F', 'G']  # Update as needed
+CHORD_LABELS = ['Am', 'Bb', 'Bdim', 'C', 'Dm', 'Em', 'F', 'G']
 
 # Load the trained model
 model_path = 'model/trained_model_trail_1_GCP.h5'
@@ -33,9 +31,13 @@ def extract_mfcc(audio, sr):
 def classify_chord(audio):
     mfcc_features = extract_mfcc(audio, sr)
     mfcc_features = np.expand_dims(mfcc_features, axis=0)
-    prediction = model.predict(mfcc_features)
-    predicted_class = np.argmax(prediction, axis=1)
-    return CHORD_LABELS[predicted_class[0]]
+    try:
+        prediction = model.predict(mfcc_features)
+        predicted_class = np.argmax(prediction, axis=1)
+        return CHORD_LABELS[predicted_class[0]]
+    except Exception as e:
+        st.error(f"Error during classification: {e}")
+        return None
 
 # Function to plot the spectrogram
 def plot_spectrogram(audio, sr):
@@ -57,6 +59,7 @@ class AudioProcessor(AudioProcessorBase):
         self.audio_buffer.append(audio)
         return frame
 
+# Streamlit app styling and layout
 st.markdown(
     f"""
     <style>
@@ -92,11 +95,10 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
 st.title("🎸 Guitar Chord Classifier")
 st.write("Upload or record a WAV file to classify the guitar chord and visualize its spectrogram.")
 
-# Audio recording option
+# Audio recording and streaming
 webrtc_ctx = webrtc_streamer(
     key="example",
     mode=WebRtcMode.SENDRECV,
@@ -109,6 +111,7 @@ webrtc_ctx = webrtc_streamer(
 
 if webrtc_ctx and webrtc_ctx.audio_processor:
     audio_data = np.concatenate(webrtc_ctx.audio_processor.audio_buffer, axis=0)
+    st.write(f"Audio data shape: {audio_data.shape}")  # Debugging line
     if len(audio_data) > 0:
         audio_data = audio_data.astype(np.float32)
         audio_data /= np.max(np.abs(audio_data), axis=0)
@@ -116,7 +119,8 @@ if webrtc_ctx and webrtc_ctx.audio_processor:
 
         # Classify chord
         predicted_chord = classify_chord(audio_data)
-        st.write(f"Predicted Chord: **{predicted_chord}**")
+        if predicted_chord:
+            st.write(f"Predicted Chord: **{predicted_chord}**")
         
         # Display chord buttons
         st.write("Chord Prediction:")
