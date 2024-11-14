@@ -1,8 +1,8 @@
 streamlit
 streamlit-webrtc
-keras==2.12.0
+keras
 tensorflow
 librosa
 numpy
 matplotlib==3.7.1
-soundfile==0.10.2  # Required by librosa for audio file processing
+soundfile  # Required by librosa for audio file processing
