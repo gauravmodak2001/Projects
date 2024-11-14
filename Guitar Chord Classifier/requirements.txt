@@ -1,9 +1,0 @@
-streamlit==1.24.0
-streamlit-webrtc==0.40.0
-keras==2.12.0
-tensorflow==2.12.0  # Keras depends on TensorFlow as a backend
-librosa==0.10.0
-numpy==1.23.5
-matplotlib==3.7.1
-soundfile==0.10.2  # Required by librosa for audio file processing
-base64  # No installation needed, part of Python standard library
